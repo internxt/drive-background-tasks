@@ -16,31 +16,28 @@ export class Consumer<TaskPayload> extends EventEmitter {
     let itemsBeingHandled = 0;
 
     await this.channel.assertQueue(this.queueName);
+    await this.channel.prefetch(this.maxItemsBeingHandled);
 
-    while (true) {
+    this.channel.consume(this.queueName, async (msg) => {
       console.log(`Handling ${itemsBeingHandled} items...`);
-      if (itemsBeingHandled >= this.maxItemsBeingHandled) {
-        await wait(1000);
-        continue;
-      }
-
-      const msg = await this.channel.get(this.queueName);
-
-      if (!msg) {
-        console.log('No messages to handle...');
-        await wait(1000);
-        continue;
-      }
-      itemsBeingHandled++;
-      this.handleTask(JSON.parse(msg.content.toString()) as TaskPayload).then(() => {
-        this.channel.ack(msg);
-      }).catch((err) => {
+      try {
+        itemsBeingHandled++;
+        if (msg) {
+          await this.handleTask(JSON.parse(msg.content.toString()) as TaskPayload);
+          this.channel.ack(msg);
+        } else {
+          console.log('No messages to handle...');
+          await wait(1000);
+        }
+      } catch (err) {
         this.emit('error', { err, msg });
-        this.channel.nack(msg, undefined, false);
-      }).finally(() => {
+        if (msg) {
+          this.channel.nack(msg, undefined, false);
+        }
+      } finally {
         itemsBeingHandled--;
-      });
-    }
+      }
+    });
   }
 
   async stop() {
