@@ -84,7 +84,7 @@ export class DriveDatabase {
   }
 
   /**
-   * Faltar revisar y asegurar que se borran todos por que el limit está ahí puesto
+   * Marks children files as deleted
    * @param folderId 
    */
   async markChildrenFilesAsDeleted(folderId: string): Promise<void> {
@@ -109,14 +109,12 @@ export class DriveDatabase {
 
       const result = await this.client.query(query);
 
-      console.log('markChildrenFilesAsDeleted', result.rows);
-
       count = result.rowCount;
     } while (count === 1000);
   }
 
   /**
-   * Faltar revisar y asegurar que se borran todos por que el limit está ahí puesto
+   * Marks children folders as deleted
    * @param folderId 
    */
   async markChildrenFoldersAsDeleted(folderId: string): Promise<void> {
@@ -140,8 +138,6 @@ export class DriveDatabase {
       `;
 
       const result = await this.client.query(query);
-
-      console.log('markChildrenFoldersAsDeleted', result.rows);
 
       count = result.rowCount;
     } while (count === 1000);
