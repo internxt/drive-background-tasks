@@ -27,8 +27,26 @@ config();
 
 const amqpServer = process.env.AMQP_SERVER;
 const queueName = process.env.MARK_DELETED_ITEMS_QUEUE_NAME;
+const maxEnqueuedItems = process.env.TASK_MARK_DELETED_ITEMS_PRODUCER_MAX_ENQUEUED_ITEMS;
+const maxConcurrentItems = process.env.TASK_MARK_DELETED_ITEMS_CONSUMER_MAX_CONCURRENT_ITEMS;
 
-logger.log(`params: process_type -> ${type}, env -> ${JSON.stringify({ amqpServer, queueName })}`);
+if (!maxEnqueuedItems) {
+  logger.log('Missing env var: TASK_MARK_DELETED_ITEMS_PRODUCER_MAX_ENQUEUED_ITEMS');
+  process.exit(1);
+}
+
+if (!maxConcurrentItems) {
+  logger.log('Missing env var: TASK_MARK_DELETED_ITEMS_CONSUMER_MAX_CONCURRENT_ITEMS');
+  process.exit(1);
+}
+
+logger.log(`params: process_type -> ${type}, env -> ${
+  JSON.stringify({ 
+    maxConcurrentItems, 
+    maxEnqueuedItems, 
+    queueName 
+  })
+}`);
 
 let db: DriveDatabase;
 let connection: amqp.Connection;
@@ -80,7 +98,7 @@ start().then(({ connection, db }) => {
         channel, 
         queueName as string, 
         deletedFoldersIterator,
-        100,
+        maxEnqueuedItems ? parseInt(maxEnqueuedItems as string) : undefined,
       );
 
       producer.on('enqueue', (item) => {
@@ -110,7 +128,8 @@ start().then(({ connection, db }) => {
           await db.markChildrenFilesAsDeleted(taskPayload.folder_id);
           await db.markChildrenFoldersAsDeleted(taskPayload.folder_id);
           await db.markDeletedFolderAsProcessed([taskPayload.folder_id]);
-        }
+        },
+        maxConcurrentItems ? parseInt(maxConcurrentItems as string) : undefined,
       );
 
       consumer.on('error', ({ err, msg }) => {
