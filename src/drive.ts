@@ -56,7 +56,7 @@ export class DriveDatabase {
     updated_at: Date,
     processed_at: Date,
   }[]> {
-    const query = 'SELECT * FROM deleted_folders WHERE processed = false LIMIT 10';
+    const query = 'SELECT * FROM deleted_folders WHERE processed = false LIMIT 100';
 
     const result = await this.client.query(query);
 
