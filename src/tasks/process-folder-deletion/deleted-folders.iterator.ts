@@ -13,11 +13,17 @@ export class DeletedFoldersIterator {
     }[] = [];
 
     do {
-      rows = await this.db.getChildrenFoldersOfDeletedFolders();
-      if (rows.length === 0) break;
-      await this.db.setFoldersAsEnqueued(rows.map((row) => row.folder_id));
-      for (const row of rows) yield row;
-
-    } while (rows.length > 0);
+      const rows = await this.db.getChildrenFoldersOfDeletedFolders();
+      if (rows.length === 0) {
+        // Wait for a short period before checking for new data.
+        console.log('No data to process, waiting 1s...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        await this.db.setFoldersAsEnqueued(rows.map(row => row.folder_id));
+        for (const row of rows) {
+          yield row;
+        }
+      }
+    } while (true);
   }
 }
