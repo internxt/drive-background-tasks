@@ -93,7 +93,7 @@ start().then(({ connection, db }) => {
   if (type === 'producer') {
     const deletedFoldersIterator = new DeletedFoldersIterator(db);
 
-    connection.createChannel().then((channel) => {
+    return connection.createChannel().then((channel) => {
       const producer = new Producer(
         channel, 
         queueName as string, 
@@ -109,10 +109,10 @@ start().then(({ connection, db }) => {
         logger.log(`queue full, waiting 1s...`, 'producer');
       });
 
-      producer.run();
+      return producer.run();
     });
   } else {
-    connection.createChannel().then((channel) => {
+    return connection.createChannel().then((channel) => {
       const consumer = new Consumer<{ 
         folder_id: string,
         processed: boolean,
@@ -136,9 +136,11 @@ start().then(({ connection, db }) => {
         logger.error(`error processing item: ${JSON.stringify(msg.content)}`, err, 'consumer');
       });
       
-      consumer.run();
+      return consumer.run();
     });
   }
+}).then(() => {
+  handleStop();
 }).catch((err) => {
   logger.error('Error starting', err);
   process.exit(1);

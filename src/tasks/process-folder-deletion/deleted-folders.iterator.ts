@@ -14,9 +14,8 @@ export class DeletedFoldersIterator {
 
     do {
       rows = await this.db.getChildrenFoldersOfDeletedFolders();
-      if (rows.length > 0) {
-        await this.db.setFoldersAsEnqueued(rows.map((row) => row.folder_id));
-      }
+      if (rows.length === 0) break;
+      await this.db.setFoldersAsEnqueued(rows.map((row) => row.folder_id));
       for (const row of rows) yield row;
 
     } while (rows.length > 0);
