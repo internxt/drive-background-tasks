@@ -112,7 +112,7 @@ start().then(({ connection, db }) => {
       return producer.run();
     });
   } else {
-    return connection.createChannel().then((channel) => {
+    connection.createChannel().then((channel) => {
       const consumer = new Consumer<{ 
         folder_id: string,
         processed: boolean,
@@ -136,11 +136,9 @@ start().then(({ connection, db }) => {
         logger.error(`error processing item: ${JSON.stringify(msg.content)}`, err, 'consumer');
       });
       
-      return consumer.run();
+      consumer.run();
     });
   }
-}).then(() => {
-  handleStop();
 }).catch((err) => {
   logger.error('Error starting', err);
   process.exit(1);
