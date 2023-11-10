@@ -9,4 +9,4 @@ COPY . .
 RUN yarn && yarn build && yarn --production && yarn cache clean
 
 # Start server
-CMD yarn start:prod:producer
+CMD yarn start:prod
