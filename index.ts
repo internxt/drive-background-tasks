@@ -3,50 +3,34 @@ import amqp from 'amqplib';
 import { v4 } from 'uuid';
 
 import { createLogger } from './src/utils';
-import { Consumer } from './src/consumer';
-import { Producer } from './src/producer';
 import { DriveDatabase } from './src/drive';
-import { DeletedFoldersIterator } from './src/tasks/process-folder-deletion/deleted-folders.iterator';
-
-const [,, ...args] = process.argv;
-const [type] = args;
-
-if (!type) {
-  console.error('Missing argument: type');
-  process.exit(1);
-}
-
-if (type !== 'producer' && type !== 'consumer') {
-  console.error('Invalid argument: type. Accepted values are "producer" or "consumer"');
-  process.exit(1);
-}
-const processId = v4();
-const logger = createLogger(processId);
+import { taskTypes, tasks } from './src/tasks';
+import { ProcessType } from './src/tasks/process';
 
 config();
 
-const amqpServer = process.env.AMQP_SERVER;
-const queueName = process.env.MARK_DELETED_ITEMS_QUEUE_NAME;
-const maxEnqueuedItems = process.env.TASK_MARK_DELETED_ITEMS_PRODUCER_MAX_ENQUEUED_ITEMS;
-const maxConcurrentItems = process.env.TASK_MARK_DELETED_ITEMS_CONSUMER_MAX_CONCURRENT_ITEMS;
+const taskType = process.env.TASK_TYPE as undefined | string;
 
-if (!maxEnqueuedItems) {
-  logger.log('Missing env var: TASK_MARK_DELETED_ITEMS_PRODUCER_MAX_ENQUEUED_ITEMS');
+if (!taskType || !taskTypes.includes(taskType)) {
+  console.error(`Invalid or missing task type. Expected ${
+    taskTypes.map(t => `'${t}'`).join(', ')
+  } but got '${taskType}'`);
   process.exit(1);
 }
 
-if (!maxConcurrentItems) {
-  logger.log('Missing env var: TASK_MARK_DELETED_ITEMS_CONSUMER_MAX_CONCURRENT_ITEMS');
+const processType = process.env.PROCESS_TYPE as undefined | ProcessType;
+
+if (!processType || !Object.values(ProcessType).includes(processType)) {
+  console.error(`Invalid or missing process type. Expected ${
+    Object.values(ProcessType).map(t => `'${t}'`).join(', ')
+  } but got '${processType}'`);
   process.exit(1);
 }
 
-logger.log(`params: process_type -> ${type}, env -> ${
-  JSON.stringify({ 
-    maxConcurrentItems, 
-    maxEnqueuedItems, 
-    queueName 
-  })
-}`);
+const processId = v4();
+const logger = createLogger(processId);
+
+const amqpServer = process.env.QUEUE_SERVER;
 
 let db: DriveDatabase;
 let connection: amqp.Connection;
@@ -75,7 +59,7 @@ function handleStop() {
   }
 }
 
-async function start(): Promise<{ connection: amqp.Connection, db: DriveDatabase }> {
+async function start(): Promise<void> {
   db = new DriveDatabase();
 
   logger.log('(drive-db) connecting ...');
@@ -86,63 +70,13 @@ async function start(): Promise<{ connection: amqp.Connection, db: DriveDatabase
   connection = await amqp.connect(amqpServer as string);
   logger.log('(rabbit) connected !');
 
-  return { connection, db };
+  await tasks[taskType as string](processType as 'consumer' | 'producer', { db }, connection);
 }
 
-start().then(({ connection, db }) => {
-  if (type === 'producer') {
-    const deletedFoldersIterator = new DeletedFoldersIterator(db);
-
-    return connection.createChannel().then((channel) => {
-      const producer = new Producer(
-        channel, 
-        queueName as string, 
-        deletedFoldersIterator,
-        maxEnqueuedItems ? parseInt(maxEnqueuedItems as string) : undefined,
-      );
-
-      producer.on('enqueue', (item) => {
-        logger.log(`enqueued item: + ${JSON.stringify(item)}`, 'producer');
-      });
-
-      producer.on('queue-full', () => {
-        logger.log(`queue full, waiting 1s...`, 'producer');
-      });
-
-      return producer.run();
-    });
-  } else {
-    connection.createChannel().then((channel) => {
-      const consumer = new Consumer<{ 
-        folder_id: string,
-        processed: boolean,
-        created_at: Date,
-        updated_at: Date,
-        processed_at: Date,
-      }>(
-        channel, 
-        queueName as string,
-        async (taskPayload) => {
-          logger.log(`received item: + ${JSON.stringify(taskPayload)}`, 'consumer');
-  
-          await db.markChildrenFilesAsDeleted(taskPayload.folder_id);
-          await db.markChildrenFoldersAsDeleted(taskPayload.folder_id);
-          await db.markDeletedFolderAsProcessed([taskPayload.folder_id]);
-        },
-        maxConcurrentItems ? parseInt(maxConcurrentItems as string) : undefined,
-      );
-
-      consumer.on('error', ({ err, msg }) => {
-        logger.error(`error processing item: ${JSON.stringify(msg.content)}`, err, 'consumer');
-      });
-      
-      consumer.run();
-    });
-  }
-}).catch((err) => {
+start().catch((err) => {
   logger.error('Error starting', err);
   process.exit(1);
-})
+});
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught exception', err);
