@@ -21,7 +21,7 @@ export class Producer<T> extends EventEmitter {
       this.channel.sendToQueue(
         this.queueName, 
         Buffer.from(
-          JSON.stringify(item),
+          (item as any[]).length ? JSON.stringify({ payload: item }) : JSON.stringify(item),
         ),
       );
 

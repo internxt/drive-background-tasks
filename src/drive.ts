@@ -49,6 +49,47 @@ export class DriveDatabase {
     await this.client.end();
   }
 
+  async getDeletedFiles(): Promise<{
+    fileId: string;
+    processed: boolean,
+    createdAt: Date,
+    updatedAt: Date,
+    processedAt: Date,
+  }[]> {
+    const query = 'SELECT * FROM deleted_files WHERE processed = false AND enqueued = false LIMIT 100';
+
+    const result = await this.client.query(query);
+
+    return result.rows.map(r => ({
+      fileId: r.file_id,
+      processed: r.processed,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      processedAt: r.processed_at,
+      networkFileId: r.network_file_id,
+    }));
+  }
+
+  async setFilesAsEnqueued(fileIds: string[]): Promise<void> {
+    const query = `
+      UPDATE deleted_files
+      SET enqueued = true, enqueued_at = NOW(), updated_at = NOW()
+      WHERE file_id IN (${fileIds.map((fileIds) => `'${fileIds}'`).join(', ')})
+    `;
+
+    await this.client.query(query);
+  }
+
+  async markDeletedFilesAsProcessed(uuids: string[]): Promise<void> {
+    const query = `
+      UPDATE deleted_files
+      SET processed = true, processed_at = NOW(), updated_at = NOW()
+      WHERE file_id IN (${uuids.map((uuid) => `'${uuid}'`).join(', ')})
+    `;
+
+    await this.client.query(query);
+  }
+
   async getChildrenFoldersOfDeletedFolders(): Promise<{ 
     folder_id: string,
     processed: boolean,
