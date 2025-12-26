@@ -183,4 +183,54 @@ export class DriveDatabase {
       count = result.rowCount;
     } while (count === 1000);
   }
+
+      /**
+     * Gets network file IDs for existing file versions in batches
+     * @param fileIds
+     */
+    async getFileVersionsByFileId(fileIds: string[]): Promise<
+        {
+            id: string;
+            fileId: string;
+            networkFileId: string;
+        }[]
+    > {
+        const placeholders = fileIds.map((_, i) => `$${i + 1}`).join(", ");
+        const query = `
+            SELECT network_file_id, file_id, id
+            FROM file_versions
+            WHERE file_id IN (${placeholders})
+            AND status = 'EXISTS'
+        `;
+
+        const result = await this.client.query(query, fileIds);
+
+        return result.rows.map((r) => ({
+            id: r.id,
+            networkFileId: r.network_file_id,
+            fileId: r.file_id,
+        }));
+    }
+
+
+    /**
+     * Mark file versions as deleted
+     * @param versionIds
+     */
+    async markFileVersionsAsDeleted(versionIds: string[]): Promise<number> {
+        const placeholders = versionIds.map((_, i) => `$${i + 1}`).join(", ");
+        if (placeholders.length === 0) {
+            return 0;
+        }
+
+        const query = `
+            UPDATE file_versions
+            SET status = 'DELETED', updated_at = NOW()
+            WHERE id IN (${placeholders})
+            AND status = 'EXISTS'
+        `;
+        const result = await this.client.query(query, versionIds);
+
+        return result.rowCount;
+    }
 }
