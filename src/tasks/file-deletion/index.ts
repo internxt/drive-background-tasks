@@ -123,7 +123,7 @@ const task: TaskFunction = async (
           const res = await deleteFiles(process.env.NETWORK_GATEWAY_DELETE_FILES_ENDPOINT as string, aggregatedNetworkFileIdsToDelete);
           const fileIdsDeletedSuccesfully = res.message.confirmed;
           const filesToMarkAsDeleted = task.payload.filter((file) => fileIdsDeletedSuccesfully.includes(file.networkFileId));
-          const fileVersionsToMarkAsDeleted = fileVersionsData.filter((fileNetwork) => fileIdsDeletedSuccesfully.includes(fileNetwork.networkFileId));
+          const fileVersionsToMarkAsDeleted = fileVersionsData.filter((fileVersion) => fileIdsDeletedSuccesfully.includes(fileVersion.networkFileId));
 
           await drive.db.markDeletedFilesAsProcessed(filesToMarkAsDeleted.map(f => f.fileId));
           await drive.db.markFileVersionsAsDeleted(fileVersionsToMarkAsDeleted.map(fv => fv.id));
