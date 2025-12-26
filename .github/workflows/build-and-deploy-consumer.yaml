@@ -1,4 +1,4 @@
-name: build & deploy
+name: Build and Deploy to Production
 on:
   push:
     branches: ["master", "feature/cd", "feat/delete-files"]
@@ -21,7 +21,7 @@ jobs:
           context: .
           file: ./consumer.Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks-consumer:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -34,10 +34,10 @@ jobs:
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: set image --record deployment/background-tasks-consumer background-tasks-consumer=${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks-consumer:${{ github.sha }}
+          command: set image --record deployment/delete-files-consumer delete-files-consumer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
       - name: Verify successful deployment
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: rollout status deployment/background-tasks-consumer
+          command: rollout status deployment/delete-files-consumer
