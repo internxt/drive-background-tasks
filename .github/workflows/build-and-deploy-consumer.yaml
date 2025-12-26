@@ -19,7 +19,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./consumer.Dockerfile
+          file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
   deploy:
