@@ -126,7 +126,7 @@ const task: TaskFunction = async (
           const fileVersionsToMarkAsDeleted = fileVersionsData.filter((fileVersion) => fileIdsDeletedSuccesfully.includes(fileVersion.networkFileId));
 
           await drive.db.markDeletedFilesAsProcessed(filesToMarkAsDeleted.map(f => f.fileId));
-          await drive.db.markFileVersionsAsDeleted(fileVersionsToMarkAsDeleted.map(fv => fv.id));
+          await drive.db.markFileVersionsAsRemoved(fileVersionsToMarkAsDeleted.map(fv => fv.id));
         },
         maxConcurrentItems ? parseInt(maxConcurrentItems as string) : undefined,
       );

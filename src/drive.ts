@@ -214,10 +214,10 @@ export class DriveDatabase {
 
 
     /**
-     * Mark file versions as deleted
+     * Mark file versions as removed
      * @param versionIds
      */
-    async markFileVersionsAsDeleted(versionIds: string[]): Promise<number> {
+    async markFileVersionsAsRemoved(versionIds: string[]): Promise<number> {
         const placeholders = versionIds.map((_, i) => `$${i + 1}`).join(", ");
         if (placeholders.length === 0) {
             return 0;
@@ -225,9 +225,8 @@ export class DriveDatabase {
 
         const query = `
             UPDATE file_versions
-            SET status = 'DELETED', updated_at = NOW()
+            SET status = 'REMOVED', updated_at = NOW()
             WHERE id IN (${placeholders})
-            AND status = 'EXISTS'
         `;
         const result = await this.client.query(query, versionIds);
 
