@@ -115,18 +115,15 @@ const task: TaskFunction = async (
 
           const networkFileIdsToDelete = task.payload.map((file) => file.networkFileId);
           const fileIdsToDelete = task.payload.map((file) => file.fileId);
+
+          const res = await deleteFiles(process.env.NETWORK_GATEWAY_DELETE_FILES_ENDPOINT as string, networkFileIdsToDelete);
+          const fileIdsDeletedSuccessfully = res.message.confirmed;
+          const filesToMarkAsProcessed = task.payload.filter((file) => fileIdsDeletedSuccessfully.includes(file.networkFileId));
+
+          await drive.db.markDeletedFilesAsProcessed(filesToMarkAsProcessed.map(f => f.fileId));
+
           const fileVersionsData = await drive.db.getFileVersionsByFileId(fileIdsToDelete);
-          const networkVersionFileIdsToDelete = fileVersionsData.map(fv => fv.networkFileId);
-
-          const aggregatedNetworkFileIdsToDelete = networkFileIdsToDelete.concat(networkVersionFileIdsToDelete);
-        
-          const res = await deleteFiles(process.env.NETWORK_GATEWAY_DELETE_FILES_ENDPOINT as string, aggregatedNetworkFileIdsToDelete);
-          const fileIdsDeletedSuccesfully = res.message.confirmed;
-          const filesToMarkAsDeleted = task.payload.filter((file) => fileIdsDeletedSuccesfully.includes(file.networkFileId));
-          const fileVersionsToMarkAsDeleted = fileVersionsData.filter((fileVersion) => fileIdsDeletedSuccesfully.includes(fileVersion.networkFileId));
-
-          await drive.db.markDeletedFilesAsProcessed(filesToMarkAsDeleted.map(f => f.fileId));
-          await drive.db.markFileVersionsAsDeleted(fileVersionsToMarkAsDeleted.map(fv => fv.id));
+          await drive.db.markFileVersionsAsDeleted(fileVersionsData.map(fv => fv.id));
         },
         maxConcurrentItems ? parseInt(maxConcurrentItems as string) : undefined,
       );
