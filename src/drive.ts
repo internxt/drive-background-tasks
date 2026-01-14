@@ -233,4 +233,78 @@ export class DriveDatabase {
 
         return result.rowCount;
     }
+
+    /**
+     * Gets deleted file versions pending processing
+     * @returns Array of deleted file versions
+     */
+    async getDeletedFileVersions(): Promise<{
+        fileVersionId: string;
+        fileId: string;
+        networkFileId: string;
+        size: bigint;
+        processed: boolean;
+        enqueued: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        processedAt: Date;
+    }[]> {
+        const query = `
+            SELECT
+                file_version_id,
+                file_id,
+                network_file_id,
+                size,
+                processed,
+                enqueued,
+                created_at,
+                updated_at,
+                processed_at
+            FROM deleted_file_versions
+            WHERE processed = false AND enqueued = false
+            LIMIT 100
+        `;
+
+        const result = await this.client.query(query);
+
+        return result.rows.map(r => ({
+            fileVersionId: r.file_version_id,
+            fileId: r.file_id,
+            networkFileId: r.network_file_id,
+            size: r.size,
+            processed: r.processed,
+            enqueued: r.enqueued,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+            processedAt: r.processed_at,
+        }));
+    }
+
+    /**
+     * Mark file versions as enqueued for deletion
+     * @param versionIds
+     */
+    async setFileVersionsAsEnqueued(versionIds: string[]): Promise<void> {
+        const placeholders = versionIds.map((_, i) => `$${i + 1}`).join(", ");
+        const query = `
+            UPDATE deleted_file_versions
+            SET enqueued = true, enqueued_at = NOW(), updated_at = NOW()
+            WHERE file_version_id IN (${placeholders})
+        `;
+        await this.client.query(query, versionIds);
+    }
+
+    /**
+     * Mark deleted file versions as processed after successful deletion from network
+     * @param versionIds
+     */
+    async markDeletedFileVersionsAsProcessed(versionIds: string[]): Promise<void> {
+        const placeholders = versionIds.map((_, i) => `$${i + 1}`).join(", ");
+        const query = `
+            UPDATE deleted_file_versions
+            SET processed = true, processed_at = NOW(), updated_at = NOW()
+            WHERE file_version_id IN (${placeholders})
+        `;
+        await this.client.query(query, versionIds);
+    }
 }
