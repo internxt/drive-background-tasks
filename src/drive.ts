@@ -249,21 +249,7 @@ export class DriveDatabase {
         updatedAt: Date;
         processedAt: Date;
     }[]> {
-        const query = `
-            SELECT
-                file_version_id,
-                file_id,
-                network_file_id,
-                size,
-                processed,
-                enqueued,
-                created_at,
-                updated_at,
-                processed_at
-            FROM deleted_file_versions
-            WHERE processed = false AND enqueued = false
-            LIMIT 100
-        `;
+        const query = 'SELECT * FROM deleted_file_versions WHERE processed = false AND enqueued = false LIMIT 100';
 
         const result = await this.client.query(query);
 
