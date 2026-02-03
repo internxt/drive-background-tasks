@@ -1,12 +1,11 @@
 import { v4 } from 'uuid';
-import axios, { AxiosRequestConfig } from 'axios';
-import { sign } from 'jsonwebtoken'
 
 import { createLogger } from '../../utils';
 import { Consumer } from '../../consumer';
 import { Producer } from '../../producer';
 import { DeletedFilesIterator } from './deleted-files.iterator';
 import { TaskFunction } from '../task';
+import { deleteFiles } from '../../network';
 
 const task: TaskFunction = async (
   processType,
@@ -15,42 +14,6 @@ const task: TaskFunction = async (
 ) => {
   const processId = v4();
   const logger = createLogger(processId);
-
-  type DeleteFilesResponse = {
-    message: {
-      confirmed: string[],
-      notConfirmed: string[]
-    }
-  }
-
-  function signToken(duration: string, secret: string) {
-    return sign(
-      {},
-      Buffer.from(secret, 'base64').toString('utf8'),
-      {
-        algorithm: 'RS256',
-        expiresIn: duration
-      }
-    );
-  }
-
-  function deleteFiles(endpoint: string, fileIds: string[]): Promise<DeleteFilesResponse> {
-    const params: AxiosRequestConfig = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${signToken(
-          '5m', 
-          process.env.NETWORK_GATEWAY_DELETE_FILES_SECRET as string
-        )}`
-      },
-      data: {
-        files: fileIds
-      }
-    };
-
-    return axios.delete<DeleteFilesResponse>(endpoint, params)
-      .then((res) => res.data);
-  }
 
   const queueName = `${process.env.TASK_TYPE}-${process.env.NODE_ENV}`;
   const maxEnqueuedItems = process.env.TASK_DELETE_FILES_PRODUCER_MAX_ENQUEUED_ITEMS;
