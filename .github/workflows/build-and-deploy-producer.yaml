@@ -19,28 +19,28 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./
-          file: ./producer.Dockerfile
+          file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks-producer:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: production
     steps:
-      - uses: actions/checkout@master
-      - name: Update delete files/folders deployment image
-        uses: steebchen/kubectl@v2.0.0
-        with:
-          config: ${{ secrets.KUBE_CONFIG_DATA }}
-          version: v1.27.4
-          command: set image --record deployment/background-tasks-producer background-tasks-producer=${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks:${{ github.sha }}
-      - name: Verify succesful deployment
-        uses: steebchen/kubectl@v2.0.0
-        with:
-          config: ${{ secrets.KUBE_CONFIG_DATA }}
-          version: v1.27.4
-          command: rollout status deployment/background-tasks-producer
+      # - uses: actions/checkout@master
+      # - name: Update delete files/folders deployment image
+      #  uses: steebchen/kubectl@v2.0.0
+      #  with:
+      #    config: ${{ secrets.KUBE_CONFIG_DATA }}
+      #    version: v1.27.4
+      #    command: set image --record deployment/background-tasks-producer background-tasks-producer=${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks:${{ github.sha }}
+      # - name: Verify succesful deployment
+      #  uses: steebchen/kubectl@v2.0.0
+      #  with:
+      #    config: ${{ secrets.KUBE_CONFIG_DATA }}
+      #    version: v1.27.4
+      #    command: rollout status deployment/background-tasks-producer
       - name: Update delete file versions deployment image
         uses: steebchen/kubectl@v2.0.0
         with:
