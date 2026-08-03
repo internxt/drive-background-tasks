@@ -56,7 +56,7 @@ export class DriveDatabase {
     updatedAt: Date,
     processedAt: Date,
   }[]> {
-    const query = 'SELECT * FROM deleted_files WHERE processed = false AND enqueued = false LIMIT 100';
+    const query = 'SELECT * FROM deleted_files_new WHERE processed = false AND enqueued = false LIMIT 100';
 
     const result = await this.client.query(query);
 
@@ -72,7 +72,7 @@ export class DriveDatabase {
 
   async setFilesAsEnqueued(fileIds: string[]): Promise<void> {
     const query = `
-      UPDATE deleted_files
+      UPDATE deleted_files_new
       SET enqueued = true, enqueued_at = NOW(), updated_at = NOW()
       WHERE file_id IN (${fileIds.map((fileIds) => `'${fileIds}'`).join(', ')})
     `;
@@ -82,7 +82,7 @@ export class DriveDatabase {
 
   async markDeletedFilesAsProcessed(uuids: string[]): Promise<void> {
     const query = `
-      UPDATE deleted_files
+      UPDATE deleted_files_new
       SET processed = true, processed_at = NOW(), updated_at = NOW()
       WHERE file_id IN (${uuids.map((uuid) => `'${uuid}'`).join(', ')})
     `;
