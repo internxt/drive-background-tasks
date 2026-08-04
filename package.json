@@ -4,15 +4,15 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start:dev:producer": "ts-node index.ts producer",
-    "start:dev:consumer": "ts-node index.ts consumer",
-    "start:prod:producer": "node dist/index.js producer",
-    "start:prod:consumer": "node dist/index.js consumer",
+    "start:dev": "ts-node index.ts",
+    "start:prod": "node dist/index.js",
     "build": "tsc"
   },
   "dependencies": {
     "amqplib": "^0.10.3",
+    "axios": "^1.6.1",
     "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.3",
+    "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.8.9",
     "@types/pg": "^8.10.7",
     "@types/uuid": "^9.0.6"

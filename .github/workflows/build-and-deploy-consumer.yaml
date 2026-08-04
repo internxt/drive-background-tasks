@@ -1,4 +1,4 @@
-name: build & deploy
+name: Build and Deploy Consumer to Production
 on:
   push:
     branches: ["master", "feature/cd", "feat/delete-files"]
@@ -18,7 +18,7 @@ jobs:
       - name: Build and push to DockerHub
         uses: docker/build-push-action@v5
         with:
-          context: ./
+          context: .
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
@@ -34,22 +34,22 @@ jobs:
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: set image --record deployment/delete-files-producer delete-files-producer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
+          command: set image --record deployment/delete-files-consumer delete-files-consumer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
       - name: Verify successful deployment
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: rollout status deployment/delete-files-producer
+          command: rollout status deployment/delete-files-consumer
       - name: Update delete file versions deployment image
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: set image --record deployment/delete-file-versions-producer delete-file-versions-producer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
-      - name: Verify succesful deployment
+          command: set image --record deployment/delete-file-versions-consumer delete-file-versions-consumer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
+      - name: Verify successful deployment
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: rollout status deployment/delete-file-versions-producer
+          command: rollout status deployment/delete-file-versions-consumer

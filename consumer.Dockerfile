@@ -1,4 +1,4 @@
-FROM node:iron-slim
+FROM node:24
 LABEL author="internxt"
 
 WORKDIR /app
