@@ -28,19 +28,19 @@ jobs:
     environment:
       name: production
     steps:
-      # - uses: actions/checkout@master
-      # - name: Update delete files/folders deployment image
-      #  uses: steebchen/kubectl@v2.0.0
-      #  with:
-      #    config: ${{ secrets.KUBE_CONFIG_DATA }}
-      #    version: v1.27.4
-      #    command: set image --record deployment/background-tasks-producer background-tasks-producer=${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks:${{ github.sha }}
-      # - name: Verify succesful deployment
-      #  uses: steebchen/kubectl@v2.0.0
-      #  with:
-      #    config: ${{ secrets.KUBE_CONFIG_DATA }}
-      #    version: v1.27.4
-      #    command: rollout status deployment/background-tasks-producer
+      - uses: actions/checkout@master
+      - name: Update delete items deployment image
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          version: v1.27.4
+          command: set image --record deployment/delete-files-producer delete-files-producer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
+      - name: Verify successful deployment
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          version: v1.27.4
+          command: rollout status deployment/delete-files-producer
       - name: Update delete file versions deployment image
         uses: steebchen/kubectl@v2.0.0
         with:
