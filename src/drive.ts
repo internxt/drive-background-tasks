@@ -134,21 +134,17 @@ export class DriveDatabase {
       const query = `
         UPDATE files
         SET updated_at = NOW(), status = 'DELETED'
-        WHERE id IN (
-          SELECT id 
-          FROM files 
-          WHERE folder_id = (
-            SELECT id 
-            FROM folders 
-            WHERE uuid = '${folderId}'
-          )
+        WHERE uuid IN (
+          SELECT uuid
+          FROM files
+          WHERE folder_uuid = $1
           AND status != 'DELETED'
           LIMIT 1000
-        ) 
+        )
         RETURNING *;
       `;
 
-      const result = await this.client.query(query);
+      const result = await this.client.query(query, [folderId]);
 
       count = result.rowCount;
     } while (count === 1000);
@@ -164,21 +160,17 @@ export class DriveDatabase {
       const query = `
         UPDATE folders
         SET updated_at = NOW(), removed = true, removed_at = NOW()
-        WHERE id IN (
-          SELECT id 
-          FROM folders 
-          WHERE parent_id = (
-            SELECT id 
-            FROM folders 
-            WHERE uuid = '${folderId}'
-          )
+        WHERE uuid IN (
+          SELECT uuid
+          FROM folders
+          WHERE parent_uuid = $1
           AND removed = false
           LIMIT 1000
         )
         RETURNING *;
       `;
 
-      const result = await this.client.query(query);
+      const result = await this.client.query(query, [folderId]);
 
       count = result.rowCount;
     } while (count === 1000);
