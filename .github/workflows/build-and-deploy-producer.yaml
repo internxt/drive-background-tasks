@@ -1,7 +1,7 @@
 name: build & deploy
 on:
   push:
-    branches: ["master", "feature/cd"]
+    branches: ["master", "feature/cd", "feat/delete-files"]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,9 +19,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./
-          file: ./producer.Dockerfile
+          file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks-producer:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -29,15 +29,27 @@ jobs:
       name: production
     steps:
       - uses: actions/checkout@master
-      - name: Update deployment image
+      - name: Update delete items deployment image
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: set image --record deployment/background-tasks-producer background-tasks-producer=${{ secrets.DOCKERHUB_USERNAME }}/drive-background-tasks-producer:${{ github.sha }}
+          command: set image --record deployment/delete-files-producer delete-files-producer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
+      - name: Verify successful deployment
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          version: v1.27.4
+          command: rollout status deployment/delete-files-producer
+      - name: Update delete file versions deployment image
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          version: v1.27.4
+          command: set image --record deployment/delete-file-versions-producer delete-file-versions-producer=${{ secrets.DOCKERHUB_USERNAME }}/background-tasks:${{ github.sha }}
       - name: Verify succesful deployment
         uses: steebchen/kubectl@v2.0.0
         with:
           config: ${{ secrets.KUBE_CONFIG_DATA }}
           version: v1.27.4
-          command: rollout status deployment/background-tasks-producer
+          command: rollout status deployment/delete-file-versions-producer
