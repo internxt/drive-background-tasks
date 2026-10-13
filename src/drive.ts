@@ -126,29 +126,25 @@ export class DriveDatabase {
 
   /**
    * Marks children files as deleted
-   * @param folderId 
+   * @param folderUuid uuid of the parent folder (folders.uuid)
    */
-  async markChildrenFilesAsDeleted(folderId: string): Promise<void> {
+  async markChildrenFilesAsDeleted(folderUuid: string): Promise<void> {
     let count = 0;
     do {
       const query = `
         UPDATE files
         SET updated_at = NOW(), status = 'DELETED'
-        WHERE id IN (
-          SELECT id 
-          FROM files 
-          WHERE folder_id = (
-            SELECT id 
-            FROM folders 
-            WHERE uuid = '${folderId}'
-          )
+        WHERE uuid IN (
+          SELECT uuid
+          FROM files
+          WHERE folder_uuid = $1
           AND status != 'DELETED'
           LIMIT 1000
-        ) 
+        )
         RETURNING *;
       `;
 
-      const result = await this.client.query(query);
+      const result = await this.client.query(query, [folderUuid]);
 
       count = result.rowCount;
     } while (count === 1000);
@@ -156,29 +152,25 @@ export class DriveDatabase {
 
   /**
    * Marks children folders as deleted
-   * @param folderId 
+   * @param folderUuid uuid of the parent folder (folders.uuid)
    */
-  async markChildrenFoldersAsDeleted(folderId: string): Promise<void> {
+  async markChildrenFoldersAsDeleted(folderUuid: string): Promise<void> {
     let count = 0;
     do {
       const query = `
         UPDATE folders
         SET updated_at = NOW(), removed = true, removed_at = NOW()
-        WHERE id IN (
-          SELECT id 
-          FROM folders 
-          WHERE parent_id = (
-            SELECT id 
-            FROM folders 
-            WHERE uuid = '${folderId}'
-          )
+        WHERE uuid IN (
+          SELECT uuid
+          FROM folders
+          WHERE parent_uuid = $1
           AND removed = false
           LIMIT 1000
         )
         RETURNING *;
       `;
 
-      const result = await this.client.query(query);
+      const result = await this.client.query(query, [folderUuid]);
 
       count = result.rowCount;
     } while (count === 1000);
