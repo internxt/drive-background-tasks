@@ -126,9 +126,9 @@ export class DriveDatabase {
 
   /**
    * Marks children files as deleted
-   * @param folderId 
+   * @param folderUuid uuid of the parent folder (folders.uuid)
    */
-  async markChildrenFilesAsDeleted(folderId: string): Promise<void> {
+  async markChildrenFilesAsDeleted(folderUuid: string): Promise<void> {
     let count = 0;
     do {
       const query = `
@@ -144,7 +144,7 @@ export class DriveDatabase {
         RETURNING *;
       `;
 
-      const result = await this.client.query(query, [folderId]);
+      const result = await this.client.query(query, [folderUuid]);
 
       count = result.rowCount;
     } while (count === 1000);
@@ -152,9 +152,9 @@ export class DriveDatabase {
 
   /**
    * Marks children folders as deleted
-   * @param folderId 
+   * @param folderUuid uuid of the parent folder (folders.uuid)
    */
-  async markChildrenFoldersAsDeleted(folderId: string): Promise<void> {
+  async markChildrenFoldersAsDeleted(folderUuid: string): Promise<void> {
     let count = 0;
     do {
       const query = `
@@ -170,7 +170,7 @@ export class DriveDatabase {
         RETURNING *;
       `;
 
-      const result = await this.client.query(query, [folderId]);
+      const result = await this.client.query(query, [folderUuid]);
 
       count = result.rowCount;
     } while (count === 1000);
